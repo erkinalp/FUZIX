@@ -6,14 +6,15 @@ PLATFORM_RULES = targetgcc.rules
 # Locate the libgcc used by this target.
 
 libgcc = $(shell $(TARGETCC) --print-libgcc)
+libgcc.ld = -L$(dir $(libgcc)) -lgcc
+
+libc.ld = -L$(dir $(libc.result)) -lc
 
 # Flags used everywhere.
 
 targetgcc.cflags += \
 	-g \
 	-Wall \
-	-ffunction-sections \
-	-fdata-sections \
 	-fno-inline \
 	--short-enums \
 	-Os
@@ -34,7 +35,7 @@ target-exe.ldflags += \
 	--relax
 
 # This is the macro which is appended to target build classes; it contains all
-# the cc65-specific bits of the build rules.
+# the targetgcc-specific bits of the build rules.
 
 define targetgcc.rules
 
@@ -92,8 +93,8 @@ $$($1.result): $$($1.objs) $$($$($1.class).extradeps) $$($1.extradeps)
 	$(hide) rm -f $$(dir $$@)/*.$A $$@
 	$(hide) $$(foreach lib, $$(filter %.$A, $$($1.objs)), \
 		(cd $$(dir $$@) && $(TARGETAR) -x $$(abspath $$(lib))) && ) true
-	$(hide) $(TARGETAR) -rc $$@ $$(filter %.$O, $$($1.objs))
-	$$(if $$(filter %.$A, $$($1.objs)), $(hide) $(TARGETAR) -r $$@ $$(dir $$@)/*.$O)
+	$$(if $$(filter %.$O, $$($1.objs)),$(hide) $(TARGETAR) -rc $$@ $$(filter %.$O, $$($1.objs)))
+	$$(if $$(filter %.$A, $$($1.objs)), $(hide) $(TARGETAR) -rc $$@ $$(dir $$@)/*.$O)
 
 endif
 
@@ -106,10 +107,10 @@ $$($1.result): $$($1.objs) $(crt0.result) $(binman.result) \
 	@echo LINK $$@
 	@mkdir -p $$(dir $$@)
 	$(hide) $(TARGETLD) \
-		$$(cc65.ldflags) $$($$($1.class).ldflags) $$($1.ldflags) \
+		$$(targetgcc.ldflags) $$($$($1.class).ldflags) $$($1.ldflags) \
 		-o $$@.elf \
 		--start-group \
-		$$($1.objs) $(crt0.result) $(libc.result) $(libgcc) \
+		$$($1.objs) $(crt0.result) $(libc.ld) $(libgcc.ld) \
 		--end-group
 	$(hide) $(TARGETOBJCOPY) \
 		--output-target binary $$@.elf $$@
