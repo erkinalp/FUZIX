@@ -21,8 +21,7 @@ int compare(char *s, char *t)
 	for(;*s==*t;s++,t++)
 		if(*s==0)
 			return(0);
-	return(*s==0? -1:
-		*t==0? 1:
+	return(*t==0? 1:
 		*s<*t? -2:
 		2);
 }
